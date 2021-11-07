@@ -5,7 +5,7 @@ import flask_excel as excel
 from flask import Flask
 from flask.json import JSONEncoder
 from flask_cors import CORS
-
+from .database import init_db
 
 def create_app(package_name, config, blueprints=None, extensions=None):
     app = Flask(package_name)
@@ -21,6 +21,8 @@ def create_app(package_name, config, blueprints=None, extensions=None):
             extension.init_app(app)
         excel.init_excel(app)
 
+    init_db(app)
+    
     return app
 
 

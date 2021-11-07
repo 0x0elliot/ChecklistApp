@@ -3,7 +3,7 @@ WORKDIR /opt/API
 
 COPY . /opt/API
 
-RUN chmod +x /opt/API/docker-entrypoint.sh
+RUN chmod +x docker-entrypoint.sh
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -16,7 +16,4 @@ RUN pip3 install -r requirements.txt
 
 EXPOSE 5000
 
-ENV FLASK_APP=manager.py
-
-
-CMD ["python3", "manager.py", "runserver"]
+ENTRYPOINT [ "/opt/API/docker-entrypoint.sh" ]

@@ -13,20 +13,20 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
+      - postgres
       - redis
 
-  db:
+  postgres:
     image: postgis/postgis:14-3.1-alpine
     container_name: db
     environment:
-      - POSTGRES_USER
-      - POSTGRES_PASSWORD
-      - POSTGRES_DB
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=tracker
     volumes:
       - dbdata:/var/lib/postgresql/data
     ports:
-      - "5431:5432"
+      - '5431:5432'
 
   redis:
     image: redis:5.0.3-alpine

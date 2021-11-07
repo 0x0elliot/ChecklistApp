@@ -1,7 +1,7 @@
 from flask_security import current_user
 from sqlalchemy import and_, or_
 
-from src.user.models import UserToUser
+
 from src.utils import ModelResource, operators as ops
 from .schemas import User, UserSchema
 
@@ -36,29 +36,3 @@ class UserResource(ModelResource):
     order_by = ['email', 'id', 'name']
 
     only = ()
-
-    def has_read_permission(self, qs):
-        return qs.filter(User.id.in_(UserToUser.query
-                                     .with_entities(UserToUser.customer_id)
-                                     .filter(UserToUser.business_owner_id == current_user.id).all()))
-
-    def has_change_permission(self, obj):
-        if current_user.has_role('admin') or current_user.has_role('owner'):
-            if current_user.brand_id == obj.brand_id:
-                return True
-        elif current_user.has_role('staff'):
-            if current_user.id == obj.id:
-                return True
-        return False
-
-    def has_delete_permission(self, obj):
-        if current_user.has_role('admin') or current_user.has_role('owner'):
-            if current_user.brand_id == obj.brand_id:
-                return True
-        return False
-
-    def has_add_permission(self, obj):
-        if current_user.has_role('admin') or current_user.has_role('owner'):
-            if current_user.brand_id == obj.brand_id:
-                return True
-        return False
