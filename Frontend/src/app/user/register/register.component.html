@@ -1,3 +1,11 @@
+<div *ngIf="isRegisterError" class="red-text center error-message">
+    Seems like a user has exists with that Email/Password.
+</div>
+
+<div *ngIf="isRegisterSuccess" class="green-text center error-message">
+    User Registered Successfully!
+</div>
+
 <form #registerForm = "ngForm" class = "col s12 white" (ngSubmit) = "OnSubmitRegister(Name.value, Email.value ,Password.value)">
     <div class = "row">
         <div class="input-field col s12">

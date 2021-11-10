@@ -10,8 +10,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 def get_user(user_id : int):
     return models.User.query.filter(models.User.id == user_id).first()
 
-def get_user_by_email(db, email : str):
-    return db.query(models.User).filter(models.User.email == email).first()
+def get_user_by_email(email : str):
+    return User.query.filter(models.User.email == email).first()
+
+def get_user_by_pwhash(password : str):
+    return User.query.filter(models.User.password == password).first()
 
 def get_users(db, limit: int, skip : int):
     return db.query(models.User).offset(skip).limit(limit).all()
@@ -31,6 +34,16 @@ def create_user(db, user: UserSchema):
     db.session.commit()
     db.session.refresh(db_user)
     return db_user
+
+def email_password_unique(email, password):
+    user_email = get_user_by_email(email = email)
+    hashed_password = generate_password_hash(password, method = 'sha256')
+    if user_email:
+        return False
+    elif get_user_by_pwhash(password = hashed_password):
+        return False
+    
+    return True
 
 def create_task(db, task_name, owner):
     db_task = models.Tasks(task_name = task_name, task_owner = owner)

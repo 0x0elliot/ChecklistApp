@@ -31,26 +31,26 @@ class TaskCreateResource(Resource):
     schema = TaskSchema
 
     def post(self):
-        data = request.args
+        data = request.json
         if data and current_user.is_authenticated:
-            if data['task_name']:
-                self.schema.task_name = data["task_name"]
+            if data.get('task_name'):
+                self.schema.task_name = data.get('task_name')
                 owner = get_user(user_id = current_user.id)
                 if owner == None:
                     return make_response(jsonify({"error" : "Owner with the given ID does not exist."}))
                 
                 try:
-                    create_task(db = db, task_name = data['task_name'], owner = owner)
+                    create_task(db = db, task_name = data.get('task_name'), owner = owner)
                 except Exception as e:
                     return make_response(jsonify({"error" : str(e)}))
                 
                 return make_response(jsonify({"status" : "success"}))
 
             else:
-                return jsonify({'error' : 'No task_name provided.'})
+                return make_response(jsonify({'error' : 'No task_name provided.'}), 403)
         
         elif not current_user.is_authenticated:
-            return make_response(jsonify({'error' : 'User not authenticated'}))
+            return make_response(jsonify({'error' : 'User not authenticated'}), 403)
 
         else:
             return make_response(jsonify({'error' : 'Parameter \'task_name\' absent.'}))
@@ -58,12 +58,19 @@ class TaskCreateResource(Resource):
     def get(self):
         return "Please send a POST request."
 
+    def options(self):
+        resp = make_response()
+        resp.headers['Allow'] = "OPTIONS, GET, POST"
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+        return resp
+
 class TaskDeleteResource(Resource):
     model = Tasks
     schema = TaskSchema
 
-    def delete(self):
-        data = request.args
+    def post(self):
+        data = request.json
         if data['task_id'] and current_user.is_authenticated():
             task_id = data['task_id']
             owner_id = current_user.id
@@ -75,12 +82,19 @@ class TaskDeleteResource(Resource):
                 except Exception as e:
                     return make_response(jsonify({"error" : str(e)}))
                 
-            return make_response(jsonify({"error" : "No task exists with that ID that is owned by you."}))
+            return make_response(jsonify({"error" : "No task exists with that ID that is owned by you."}), 403)
 
         return make_response(jsonify({"error" : "Right parameters weren't passed in."}))
 
     def get(self):
         return "send a DELETE request instead."
+
+    def options(self):
+        resp = make_response()
+        resp.headers['Allow'] = "OPTIONS, GET, POST"
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+        return resp
 
 class TaskListResource(Resource):
     model = Tasks
@@ -88,15 +102,22 @@ class TaskListResource(Resource):
 
     def get(self):
         if current_user.is_authenticated:
-            tasks = get_tasks(owner_id = current_user.id)
-            data = {}
-            count = 0
+            try:
+                tasks = get_tasks(owner_id = current_user.id)
+            except Exception as e:
+                print(e)
+            data = []
+            count = 1
             for task in tasks:
-                data[count] = {"task_name" : task.task_name,
-                            "task_id" : task.id}
-                count =+ 1
-
-            return data
+                new = {"count" : count,
+                        "task_name" : task.task_name,
+                        "task_id" : task.id}
+                data.append(new)
+                count += 1
+            return make_response(jsonify(data), 200)
+        else:
+            return make_response(jsonify({"error" : "User not authenticated."}), 403)
+            
 
 
 api.add_resource(TaskCreateResource, '/taskcreate/', endpoint = 'taskcreate')

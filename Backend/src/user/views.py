@@ -4,7 +4,7 @@ from datetime import timedelta
 from flask import request, jsonify, make_response, redirect, json
 from flask_jwt_extended import (create_access_token, jwt_required)
 from flask_restful import Resource
-from flask_security.utils import verify_and_update_password, login_user
+from flask_security.utils import verify_and_update_password, login_user, logout_user
 from flask_security import current_user
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
@@ -32,27 +32,29 @@ class UserView(BaseView):
 class UserLoginResource(Resource):
     model = User
 
-    decorators = [limiter.limit("300/day;30/hour;5/minute;2/second")]
+    decorators = [limiter.limit("300/day;500/hour;50/minute;20/second")]
 
     def post(self):
 
-        data = request.args
-        print(data)
+        data = request.json
+        #debug = Debug(os.environ.get("DEBUG_WEBHOOK"))
+        #debug.print_webhook(request.json.get("email"))
 
-        if data['email']:
-            data = request.args
-            user = self.model.query.filter(self.model.email == data['email']).first()
+        if data.get('email') and data.get('password'):
+            user = self.model.query.filter(self.model.email == data.get('email')).first()
 
-            password = data['password']
-            #debug = Debug(os.environ.get("DEBUG_WEBHOOK"))
-            #debug.print_webhook(crud.verify_password(user, password))
+            password = data.get('password')
             
             if user and crud.verify_password(user, password) and login_user(user):
                 expires = timedelta(days=365)
-                return make_response(
+                session_cookie = create_access_token(identity=user.id, expires_delta=expires)
+                resp = make_response(
                     jsonify({'id': user.id,
                              'user': UserSchema(only=('id', 'email', 'name')).dump(user).data,
-                             'authentication_token': create_access_token(identity=user.id, expires_delta=expires)}), 200)
+                             'authentication_token': session_cookie}), 200)
+                
+                #resp.set_cookie("session", session_cookie)
+                return resp
             else:
                 return make_response(jsonify({'meta': {'code': 403}}), 403)
 
@@ -64,6 +66,14 @@ class UserLoginResource(Resource):
             else:
                 return make_response(redirect('/api/v1/login', 403))
     
+    def options(self):
+        resp = make_response()
+        resp.headers['Allow'] = "OPTIONS, GET, POST"
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+
+        return resp
+
     def get(self):
         return "send a POST request instead."
 
@@ -72,31 +82,59 @@ class UserRegisterResource(Resource):
     schema = UserSchema
 
     def post(self):
-        data = request.args
+        data = request.json
 
         try:
-            user = User.query.filter(User.email == data['email']).first()
+            user = User.query.filter(User.email == data.get('email')).first()
         except Exception as e:
             return make_response(jsonify({"error" : str(e), "data" : data}))
 
-        if user:
-            return make_response(jsonify({}), 400)
+        #debug = Debug(os.environ.get('DEBUG_WEBHOOK'))
+        #debug.print_webhook(crud.email_password_unique(email = data.get('email'), password = data.get('password')))
+
+        if user or not crud.email_password_unique(email = data.get('email'), password = data.get('password')):
+            return make_response(jsonify({'meta': {'code': 403}}), 403)
         
-        new_data = { "email" : data['email'], "name" : data['name'],"password" : data['password']}
+        new_data = { "email" : data.get('email'), "name" : data.get('name'),"password" : data.get('password')}
         print(new_data)
         user, errors = self.schema().load(new_data)
         if errors:
-            return make_response(jsonify(errors), 400)
+            return make_response(jsonify(errors), 403)
 
         try:
             crud.create_user(db, user)
         except Exception as e:
-            return make_response(jsonify({"error" : str(e)}), 400)
+            return make_response(jsonify({"error" : str(e)}), 403)
 
         return make_response(jsonify({""}), 200)
+
+    def options(self):
+        resp = make_response()
+        resp.headers['Allow'] = "OPTIONS, GET, POST"
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+        return resp
 
     def get(self):
         return "Send a POST request instead."
 
+class UserLogoutResource(Resource):
+    model = User
+
+    def post(self):
+        if current_user.is_authenticated:
+            logout_user()
+        else:
+            return make_response(jsonify({}), 403)
+
+    def options(self):
+        resp = make_response()
+        resp.headers['Allow'] = "OPTIONS, POST"
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+
+        return resp
+
 api.add_resource(UserLoginResource, '/login/', endpoint='login')
 api.add_resource(UserRegisterResource, '/register/', endpoint='register')
+api.add_resource(UserLogoutResource, '/logout/', endpoint = 'logout')

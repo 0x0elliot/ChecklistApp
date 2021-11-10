@@ -1,1 +1,28 @@
-<p>home works!</p>
+
+<h1 class = "headtext">Tracker App</h1>
+
+<div class = "container">
+    <form #TASK = "ngForm" autocomplete="off" >
+        <input class = "tasknameinput" type="text" #task_name ngModel name = "task_name" placeholder = "Task Name" required>
+
+        <div class = "row">
+            <div class = "row item" *ngFor = "let task of tasks" class = "task">
+                <b>{{ task.count }}. {{ task.task_name }}<i (click) = "DeleteTask(task.task_id)" class = "fa fa-times cross" aria-hidden = "true"></i></b>
+            </div>
+        </div>
+    </form>
+    <div class = "row" [ngStyle] = "{'justify-content' : 'center', 'display' : 'flex', 'margin' : '15px'}">
+        <button 
+        class = "btn button"
+        [disabled] = "!TASK.valid"
+        (click) = "AddTask(task_name.value)"
+        >Add</button>
+   </div>
+   <div class = "row" [ngStyle] = "{'justify-content' : 'center', 'display' : 'flex', 'margin' : '15px'}">
+    <button 
+    class = "btn button"
+    [ngStyle] = "{'background-color' : '#E9414F'}"
+    (click) = "logout()"
+    >Logout</button>
+</div>
+</div>

@@ -1,10 +1,10 @@
 import { Injectable } from "@angular/core";
-import { HttpClient, HttpHeaders } from '@angular/common/http'
+import { HttpClient} from '@angular/common/http'
 import { User } from "./user.model";
 
 @Injectable()
 export class UserService {
-    readonly rootUrl = "http://localhost:8000";
+    readonly rootUrl = "http://localhost:4200";
     constructor(private http: HttpClient) { }
 
     registerUser(Name, Email, Password) {
@@ -14,7 +14,7 @@ export class UserService {
             email : Email,
         }
 
-        return this.http.post(this.rootUrl + '/api/v1/register', body);
+        return this.http.post(this.rootUrl + '/api/v1/register/', body);
     }
 
     LoginUser(Email, Password) {
@@ -23,7 +23,12 @@ export class UserService {
             password : Password,
         }
         
-        return this.http.post(this.rootUrl + '/api/v1/login', body);
+        return this.http.post(this.rootUrl + '/api/v1/login/', body);
+    }
+
+    LogoutUser() {
+        const body = {}
+        return this.http.post(this.rootUrl + '/api/v1/logout/', body);
     }
 
 }

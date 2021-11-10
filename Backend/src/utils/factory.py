@@ -21,6 +21,8 @@ def create_app(package_name, config, blueprints=None, extensions=None):
             extension.init_app(app)
         excel.init_excel(app)
 
+    app.config['SESSION_COOKIE_HTTPONLY'] = False
+
     init_db(app)
     
     return app

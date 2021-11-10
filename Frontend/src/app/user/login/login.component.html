@@ -1,3 +1,6 @@
+<div *ngIf="isLoginError" class="red-text center error-message">
+  Incorrect username or password
+</div>
 <form #loginForm = "ngForm" class = "col s12 white" (ngSubmit) = "OnSubmitLogin(Email.value ,Password.value)">
 
     <div class="row">
